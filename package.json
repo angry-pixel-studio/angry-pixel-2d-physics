@@ -13,13 +13,14 @@
         "lint-and-fix": "eslint . --ext .ts --fix",
         "prettier-format": "prettier --write \"src/**/*.{ts,js,css,html}\"",
         "prettier-check": "prettier --check \"src/**/*.{ts,js,css,html}\"",
-        "test": "ts-node src/test.ts"
+        "test-collisions": "ts-node src/test/collisions.ts",
+        "test-rb": "ts-node src/test/rigidBody.ts"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/angry-pixel-studio/angry-pixel-2d-renderer"
+        "url": "git+https://github.com/angry-pixel-studio/angry-pixel-2d-physics"
     },
-    "homepage": "https://github.com/angry-pixel-studio/angry-pixel-2d-renderer",
+    "homepage": "https://github.com/angry-pixel-studio/angry-pixel-2d-physics",
     "author": "Mauro Cristy <maurocristy@gmail.com>",
     "license": "MIT",
     "publishConfig": {

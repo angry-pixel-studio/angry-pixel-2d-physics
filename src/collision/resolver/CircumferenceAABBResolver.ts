@@ -24,9 +24,9 @@ export class CircumferenceAABBResolver implements ICollisionResolver {
         Vector2.unit(this.direction, this.distance);
 
         return {
-            penetration: shapeA.radius - this.distance.magnitude,
             direction: invert ? Vector2.scale(new Vector2(), this.direction, -1) : this.direction.clone(),
             displacementDirection: invert ? this.direction.clone() : Vector2.scale(new Vector2(), this.direction, -1),
+            penetration: shapeA.radius - this.distance.magnitude,
         };
     }
 }

@@ -62,9 +62,9 @@ export class SatResolver implements ICollisionResolver {
         }
 
         return {
-            penetration: this.minOverlap,
-            displacementDirection: this.displacementDirection.clone(),
             direction: Vector2.scale(new Vector2(), this.displacementDirection, -1),
+            displacementDirection: this.displacementDirection.clone(),
+            penetration: this.minOverlap,
         };
     }
 

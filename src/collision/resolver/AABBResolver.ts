@@ -33,9 +33,9 @@ export class AABBResolver implements ICollisionResolver {
         Vector2.unit(this.displacementDirection, this.displacementDirection);
 
         return {
-            penetration: this.minOverlap,
-            displacementDirection: this.displacementDirection.clone(),
             direction: Vector2.scale(new Vector2(), this.displacementDirection, -1),
+            displacementDirection: this.displacementDirection.clone(),
+            penetration: this.minOverlap,
         };
     }
 

@@ -6,6 +6,7 @@ import { ICollision } from "./ICollision";
 
 export interface ICollisionManager {
     addCollider(collider: ICollider): void;
+    getCollider(id: number): ICollider;
     removeCollider(collider: ICollider): void;
     clearColliders(): void;
     resolve(): void;
@@ -17,6 +18,7 @@ export type CollisionMatrix = [string, string][];
 
 export class CollisionManager implements ICollisionManager {
     private colliders: ICollider[];
+    private activeColliders: ICollider[];
     private quadTree: QuadTree;
     private quadTreeArea: Rectangle;
     private fixedQuadTree: boolean;
@@ -32,6 +34,7 @@ export class CollisionManager implements ICollisionManager {
     constructor(method: ICollisionMethod, quadTreeArea?: Rectangle, collisionMatrix?: CollisionMatrix) {
         this.method = method;
         this.colliders = [];
+        this.activeColliders = [];
         this.collisionMatrix = collisionMatrix;
 
         this.setupQuadTree(quadTreeArea);
@@ -45,15 +48,15 @@ export class CollisionManager implements ICollisionManager {
     }
 
     public addCollider(collider: ICollider): void {
-        this.colliders.push(collider);
+        this.colliders[collider.id] = collider;
+    }
+
+    public getCollider(id: number): ICollider {
+        return this.colliders[id];
     }
 
     public removeCollider(collider: ICollider): void {
-        const index: number = this.colliders.indexOf(collider);
-        if (index !== -1) {
-            delete this.colliders[index];
-            this.colliders.splice(index, 1);
-        }
+        delete this.colliders[collider.id];
     }
 
     public clearColliders(): void {
@@ -61,16 +64,17 @@ export class CollisionManager implements ICollisionManager {
     }
 
     public getCollisionsForCollider(collider: ICollider): ICollision[] {
-        return this.collisions.filter((collision) => collision.localCollider === collider);
+        return collider.active ? this.collisions.filter((collision) => collision.localCollider.id === collider.id) : [];
     }
 
     public refreshCollisionsForCollider(collider: ICollider): void {
-        if (this.colliders.indexOf(collider) === -1) return;
+        if (!this.colliders[collider.id] || !collider.active) return;
 
         this.collisions = this.collisions.filter(
-            (collision) => collision.localCollider !== collider && collision.remoteCollider !== collider
+            (collision) => collision.localCollider.id !== collider.id && collision.remoteCollider.id !== collider.id
         );
 
+        this.updateShape(collider);
         this.narrowPhase(collider, this.broadPhase(collider));
     }
 
@@ -81,9 +85,13 @@ export class CollisionManager implements ICollisionManager {
             return;
         }
 
+        this.activeColliders = this.colliders.filter((c) => c.active);
+
         this.quadTree.clear();
 
-        this.updateShapes();
+        this.activeColliders.forEach((collider) => {
+            this.updateShape(collider);
+        });
 
         if (this.fixedQuadTree === false) {
             this.updateNewArea();
@@ -94,11 +102,11 @@ export class CollisionManager implements ICollisionManager {
             }
         }
 
-        this.colliders.forEach((collider, index) => this.quadTree.insert(index, collider.shape.boundingBox));
+        this.activeColliders.forEach(({ id, shape: { boundingBox } }) => this.quadTree.insert(id, boundingBox));
 
         this.updateCollisions();
 
-        this.collisions.forEach((c) =>
+        /*this.collisions.forEach((c) =>
             console.log(
                 c.localCollider.shape.constructor.name,
                 c.localCollider.position,
@@ -106,21 +114,18 @@ export class CollisionManager implements ICollisionManager {
                 c.remoteCollider.position,
                 c.resolution
             )
-        );
+        );*/
     }
 
-    private updateShapes(): void {
-        this.colliders.forEach((collider) => {
-            collider.shape.position = collider.position;
-            collider.shape.rotation = collider.rotation;
-            collider.shape.update();
+    private updateShape(collider: ICollider): void {
+        collider.shape.position = collider.position;
+        collider.shape.rotation = collider.rotation;
 
-            // console.log(collider, collider.shape.boundingBox);
-        });
+        collider.shape.update();
     }
 
     private updateNewArea(): void {
-        this.colliders.forEach(({ shape: { boundingBox: box } }: ICollider) => {
+        this.activeColliders.forEach(({ shape: { boundingBox: box } }: ICollider) => {
             this.minArea.set(Math.min(box.x, this.minArea.x), Math.min(box.y, this.minArea.y));
             this.maxArea.set(Math.max(box.x1, this.maxArea.x), Math.max(box.y1, this.maxArea.y));
         });
@@ -134,7 +139,7 @@ export class CollisionManager implements ICollisionManager {
     }
 
     private updateCollisions(): void {
-        this.colliders
+        this.activeColliders
             .filter((collider) => collider.updateCollisions)
             .forEach((collider) => this.narrowPhase(collider, this.broadPhase(collider)));
     }
@@ -144,7 +149,7 @@ export class CollisionManager implements ICollisionManager {
         if (this.collisionMatrix) {
             return this.quadTree
                 .retrieve<number>(collider.shape.boundingBox)
-                .map<ICollider>((index) => this.colliders[index])
+                .map<ICollider>((id) => this.colliders[id])
                 .filter((remoteCollider) =>
                     this.collisionMatrix.some(
                         (row) =>
@@ -154,24 +159,18 @@ export class CollisionManager implements ICollisionManager {
                 );
         }
 
-        return this.quadTree
-            .retrieve<number>(collider.shape.boundingBox)
-            .map<ICollider>((index) => this.colliders[index]);
+        return this.quadTree.retrieve<number>(collider.shape.boundingBox).map<ICollider>((id) => this.colliders[id]);
     }
 
     // narrowPhase takes care of checking for actual collision
     private narrowPhase(collider: ICollider, colliders: ICollider[]): void {
-        // console.log(collider, colliders);
-
         colliders
             .filter(
                 (remoteCollider: ICollider) =>
                     (!collider.group || !remoteCollider.group || remoteCollider.group !== collider.group) &&
-                    collider !== remoteCollider
+                    collider.id !== remoteCollider.id
             )
             .forEach((remoteCollider: ICollider) => {
-                // console.log(remoteCollider);
-
                 if (this.isResolved(collider, remoteCollider)) return;
 
                 const resolution = this.method.getCollisionResolution(collider.shape, remoteCollider.shape);
@@ -200,7 +199,9 @@ export class CollisionManager implements ICollisionManager {
 
     private isResolved(localCollider: ICollider, remoteCollider: ICollider): boolean {
         for (const collision of this.collisions) {
-            if (collision.localCollider === localCollider && collision.remoteCollider === remoteCollider) return true;
+            if (collision.localCollider.id === localCollider.id && collision.remoteCollider.id === remoteCollider.id) {
+                return true;
+            }
         }
 
         return false;

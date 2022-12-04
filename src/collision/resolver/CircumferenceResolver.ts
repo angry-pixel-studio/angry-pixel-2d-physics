@@ -17,9 +17,9 @@ export class CircumferenceResolver implements ICollisionResolver {
         Vector2.unit(this.direction, this.distance);
 
         return {
-            penetration: shapeA.radius + shapeB.radius - this.distance.magnitude,
             direction: this.direction.clone(),
             displacementDirection: Vector2.scale(new Vector2(), this.direction, -1),
+            penetration: shapeA.radius + shapeB.radius - this.distance.magnitude,
         };
     }
 }

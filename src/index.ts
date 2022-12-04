@@ -1,4 +1,5 @@
 import { Rectangle } from "angry-pixel-math";
+import { ColliderFactory } from "./collision/ColliderFactory";
 import { CollisionManager, CollisionMatrix } from "./collision/CollisionManager";
 import { AABBMethod } from "./collision/method/AABBMethod";
 import { CollisionMethods } from "./collision/method/ICollisionMethod";
@@ -8,15 +9,21 @@ import { CircumferenceAABBResolver } from "./collision/resolver/CircumferenceAAB
 import { CircumferenceResolver } from "./collision/resolver/CircumferenceResolver";
 import { SatResolver } from "./collision/resolver/SatResolver";
 import { IPhysicsManager, PhysicsManager } from "./PhysicsManager";
+import { RigidBodyFactory } from "./rigidBody/RigidBodyFactory";
+import { RigidBodyManager } from "./rigidBody/RigidBodyManager";
 
 export { IPhysicsManager } from "./PhysicsManager";
+export { IColliderDto } from "./collision/ColliderFactory";
 export { ICollider } from "./collision/ICollider";
 export { ICollision } from "./collision/ICollision";
 export { ICollisionResolution } from "./collision/ICollisionResolution";
+export { CollisionMethods } from "./collision/method/ICollisionMethod";
 export { Circumference } from "./collision/shape/Circumference";
 export { Line } from "./collision/shape/Line";
 export { Polygon } from "./collision/shape/Polygon";
 export { Rectangle } from "./collision/shape/Rectangle";
+export { IRigidBodyDto } from "./rigidBody/RigidBodyFactory";
+export { IRigidBody, RigidBodyType } from "./rigidBody/IRigidBody";
 
 export interface PhysicsManagerOptions {
     collisionMethod?: CollisionMethods;
@@ -37,6 +44,9 @@ export const physicsManagerFactory = ({
             : new SatMethod(circumferenceResolver, new SatResolver());
 
     const collisionManager = new CollisionManager(selectedMethod, collisionArea, collisionMatrix);
+    const colliderFactory = new ColliderFactory();
+    const rigidBodyManager = new RigidBodyManager(collisionManager);
+    const rigidBodyFactory = new RigidBodyFactory();
 
-    return new PhysicsManager(collisionManager);
+    return new PhysicsManager(collisionManager, colliderFactory, rigidBodyManager, rigidBodyFactory);
 };
