@@ -1,7 +1,7 @@
 import { physicsManagerFactory, Rectangle, IPhysicsManager, Line, CollisionMethods } from "..";
 import { Vector2 } from "angry-pixel-math";
 
-const physicsManager: IPhysicsManager = physicsManagerFactory({ collisionMethod: CollisionMethods.AABB });
+const physicsManager: IPhysicsManager = physicsManagerFactory({ collisionMethod: CollisionMethods.SAT });
 
 const box1 = physicsManager.addCollider({
     layer: "default",
@@ -49,14 +49,22 @@ const line1 = physicsManager.addCollider({
 const run = () => {
     physicsManager.resolve(0);
 
-    console.log(physicsManager.getCollisionsForCollider(box1));
+    console.log(
+        physicsManager
+            .getCollisionsForCollider(box1)
+            .map((c) => ({ local: c.localCollider.id, remote: c.remoteCollider.id, resolution: c.resolution }))
+    );
     console.log("------------------------");
 
     box1.position.set(578, 100);
 
     physicsManager.resolve(0);
 
-    console.log(physicsManager.getCollisionsForCollider(box1));
+    console.log(
+        physicsManager
+            .getCollisionsForCollider(box1)
+            .map((c) => ({ local: c.localCollider.id, remote: c.remoteCollider.id, resolution: c.resolution }))
+    );
     console.log("------------------------");
 };
 

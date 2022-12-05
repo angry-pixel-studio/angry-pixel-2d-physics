@@ -339,8 +339,10 @@ ajv@^6.10.0, ajv@^6.12.4:
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
 
-"angry-pixel-math@file:../angry-pixel-math":
+angry-pixel-math@^1.0.2:
   version "1.0.2"
+  resolved "https://registry.yarnpkg.com/angry-pixel-math/-/angry-pixel-math-1.0.2.tgz#707b73fe8401262e1328c99c904d660d9ef2080f"
+  integrity sha512-btX6ayaWn4QgqPSJvWSTCOzD1W5wEHEomy6szUQ06zOJe/JefjPHlrNzMdcPlPCDP02az1Noe0mpZ041gehNzA==
 
 ansi-regex@^5.0.1:
   version "5.0.1"

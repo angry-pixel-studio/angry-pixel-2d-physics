@@ -105,16 +105,6 @@ export class CollisionManager implements ICollisionManager {
         this.activeColliders.forEach(({ id, shape: { boundingBox } }) => this.quadTree.insert(id, boundingBox));
 
         this.updateCollisions();
-
-        /*this.collisions.forEach((c) =>
-            console.log(
-                c.localCollider.shape.constructor.name,
-                c.localCollider.position,
-                c.remoteCollider.shape.constructor.name,
-                c.remoteCollider.position,
-                c.resolution
-            )
-        );*/
     }
 
     private updateShape(collider: ICollider): void {

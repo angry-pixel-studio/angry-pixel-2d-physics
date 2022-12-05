@@ -4,6 +4,7 @@ import { ICollider } from "./ICollider";
 import { ICollision } from "./ICollision";
 export interface ICollisionManager {
     addCollider(collider: ICollider): void;
+    getCollider(id: number): ICollider;
     removeCollider(collider: ICollider): void;
     clearColliders(): void;
     resolve(): void;
@@ -13,6 +14,7 @@ export interface ICollisionManager {
 export declare type CollisionMatrix = [string, string][];
 export declare class CollisionManager implements ICollisionManager {
     private colliders;
+    private activeColliders;
     private quadTree;
     private quadTreeArea;
     private fixedQuadTree;
@@ -25,12 +27,13 @@ export declare class CollisionManager implements ICollisionManager {
     constructor(method: ICollisionMethod, quadTreeArea?: Rectangle, collisionMatrix?: CollisionMatrix);
     private setupQuadTree;
     addCollider(collider: ICollider): void;
+    getCollider(id: number): ICollider;
     removeCollider(collider: ICollider): void;
     clearColliders(): void;
     getCollisionsForCollider(collider: ICollider): ICollision[];
     refreshCollisionsForCollider(collider: ICollider): void;
     resolve(): void;
-    private updateShapes;
+    private updateShape;
     private updateNewArea;
     private updateCollisions;
     private broadPhase;

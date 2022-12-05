@@ -1,4 +1,4 @@
-import { Vector2 } from "angry-pixel-math";
+import { Rectangle, Vector2 } from "angry-pixel-math";
 import { ICollisionResolution } from "../ICollisionResolution";
 import { IShape } from "../shape/IShape";
 import { ICollisionResolver } from "./ICollisionResolver";
@@ -20,14 +20,14 @@ export class AABBResolver implements ICollisionResolver {
 
         this.direction.set(Math.sign(boxB.x1 - boxA.x1), Math.sign(boxB.y1 - boxA.y1));
 
+        this.preventContainment(boxA, boxB);
+
         if (this.overlapY < this.overlapX) {
             this.minOverlap = this.overlapY;
             this.displacementDirection.set(0, -this.direction.y);
-            this.preventContainment(boxA.y, boxA.y1, boxB.y, boxB.y1);
         } else {
             this.minOverlap = this.overlapX;
             this.displacementDirection.set(-this.direction.x, this.overlapY === this.overlapX ? -this.direction.y : 0);
-            this.preventContainment(boxA.x, boxA.x1, boxB.x, boxB.x1);
         }
 
         Vector2.unit(this.displacementDirection, this.displacementDirection);
@@ -39,16 +39,24 @@ export class AABBResolver implements ICollisionResolver {
         };
     }
 
-    private preventContainment(min1: number, max1: number, min2: number, max2: number): void {
-        if ((min1 > min2 && max1 < max2) || (min2 > min1 && max2 < max1)) {
-            const minSep = Math.abs(min1 - min2);
-            const maxSep = Math.abs(max1 - max2);
+    private preventContainment(boxA: Rectangle, boxB: Rectangle): void {
+        if (this.overlapY > 0) {
+            if ((boxA.y1 > boxB.y1 && boxA.y < boxB.y) || (boxA.y1 < boxB.y1 && boxA.y > boxB.y)) {
+                const minSep = Math.abs(boxA.y - boxB.y);
+                const maxSep = Math.abs(boxA.y1 - boxB.y1);
 
-            if (minSep < maxSep) {
-                this.minOverlap += minSep;
-            } else {
-                this.minOverlap += maxSep;
-                Vector2.scale(this.displacementDirection, this.displacementDirection, -1);
+                this.overlapY += minSep < maxSep ? minSep : maxSep;
+                this.direction.y *= minSep < maxSep ? 1 : -1;
+            }
+        }
+
+        if (this.overlapX > 0) {
+            if ((boxA.x1 > boxB.x1 && boxA.x < boxB.x) || (boxA.x1 < boxB.x1 && boxA.x > boxB.x)) {
+                const minSep = Math.abs(boxA.x - boxB.x);
+                const maxSep = Math.abs(boxA.x1 - boxB.x1);
+
+                this.overlapX += minSep < maxSep ? minSep : maxSep;
+                this.direction.x *= minSep < maxSep ? 1 : -1;
             }
         }
     }

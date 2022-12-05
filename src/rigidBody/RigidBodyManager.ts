@@ -120,7 +120,7 @@ export class RigidBodyManager implements IRigidBodyManager {
     private getCollisions(rigidBody: IRigidBody): ICollision[] {
         return rigidBody.colliderIds
             .map<ICollider>((id) => this.collisionManager.getCollider(id))
-            .filter((collider) => collider.active)
+            .filter((collider) => collider.active && collider.physics)
             .reduce<ICollision[]>((collisions, collider) => {
                 collisions.push(
                     ...this.collisionManager

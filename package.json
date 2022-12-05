@@ -14,7 +14,8 @@
         "prettier-format": "prettier --write \"src/**/*.{ts,js,css,html}\"",
         "prettier-check": "prettier --check \"src/**/*.{ts,js,css,html}\"",
         "test-collisions": "ts-node src/test/collisions.ts",
-        "test-rb": "ts-node src/test/rigidBody.ts"
+        "test-rigidbody": "ts-node src/test/rigidBody.ts",
+        "test-containment": "ts-node src/test/containment.ts"
     },
     "repository": {
         "type": "git",
@@ -40,6 +41,6 @@
         "typescript": "^4.8.3"
     },
     "dependencies": {
-        "angry-pixel-math": "file:../angry-pixel-math"
+        "angry-pixel-math": "^1.0.2"
     }
 }

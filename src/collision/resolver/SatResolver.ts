@@ -15,6 +15,11 @@ export class SatResolver implements ICollisionResolver {
     private projB: AxisProjection = { min: 0, max: 0 };
     private currentOverlap: number;
     private minOverlap: number;
+
+    private containment: boolean = false;
+    private invert: boolean = false;
+
+    private direction: Vector2 = new Vector2();
     private displacementDirection: Vector2 = new Vector2();
 
     private distance: Vector2 = new Vector2(Infinity, Infinity);
@@ -30,7 +35,8 @@ export class SatResolver implements ICollisionResolver {
             this.setCircumferenceAxis(shapeB as Circumference, shapeA);
         }
 
-        this.axes = [...shapeA.projectionAxes, ...shapeB.projectionAxes];
+        this.axes = [...shapeA.projectionAxes];
+        shapeB.projectionAxes.forEach((pa) => (this.axes.some((a) => a.equals(pa)) ? null : this.axes.push(pa)));
 
         for (let i = 0; i < this.axes.length; i++) {
             if (shapeA.type === ShapeType.Circumference) {
@@ -47,22 +53,23 @@ export class SatResolver implements ICollisionResolver {
                 return null;
             }
 
-            // to prevent containment (bigger shape containing smaller shape)
-            this.preventContainment(i);
+            this.preventContainment();
 
             if (this.minOverlap === null || this.currentOverlap < this.minOverlap) {
                 this.minOverlap = this.currentOverlap;
-                this.displacementDirection.copy(this.axes[i]);
 
-                // negate the axis in order to use as displacment direction
-                if (this.projA.max < this.projB.max) {
-                    Vector2.scale(this.displacementDirection, this.displacementDirection, -1);
+                if ((!this.containment && this.projA.max < this.projB.max) || (this.containment && this.invert)) {
+                    this.direction.copy(this.axes[i]);
+                    Vector2.scale(this.displacementDirection, this.axes[i], -1);
+                } else {
+                    Vector2.scale(this.direction, this.axes[i], -1);
+                    this.displacementDirection.copy(this.axes[i]);
                 }
             }
         }
 
         return {
-            direction: Vector2.scale(new Vector2(), this.displacementDirection, -1),
+            direction: this.direction.clone(),
             displacementDirection: this.displacementDirection.clone(),
             penetration: this.minOverlap,
         };
@@ -80,19 +87,17 @@ export class SatResolver implements ICollisionResolver {
         return projection;
     }
 
-    private preventContainment(axisIndex: number): void {
-        if (
+    private preventContainment(): void {
+        this.containment =
             (this.projA.max > this.projB.max && this.projA.min < this.projB.min) ||
-            (this.projA.max < this.projB.max && this.projA.min > this.projB.min)
-        ) {
-            const mins = Math.abs(this.projA.min - this.projB.min);
-            const maxs = Math.abs(this.projA.max - this.projB.max);
-            if (mins < maxs) {
-                this.currentOverlap += mins;
-            } else {
-                this.currentOverlap += maxs;
-                Vector2.scale(this.axes[axisIndex], this.axes[axisIndex], -1);
-            }
+            (this.projA.max < this.projB.max && this.projA.min > this.projB.min);
+
+        if (this.containment) {
+            const minSep = Math.abs(this.projA.min - this.projB.min);
+            const maxSep = Math.abs(this.projA.max - this.projB.max);
+
+            this.invert = minSep < maxSep;
+            this.currentOverlap += this.invert ? minSep : maxSep;
         }
     }
 
