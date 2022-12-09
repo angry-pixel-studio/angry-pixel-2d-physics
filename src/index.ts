@@ -14,6 +14,7 @@ import { RigidBodyManager } from "./rigidBody/RigidBodyManager";
 
 export { IPhysicsManager } from "./PhysicsManager";
 export { IColliderDto } from "./collision/ColliderFactory";
+export { CollisionMatrix } from "./collision/CollisionManager";
 export { ICollider } from "./collision/ICollider";
 export { ICollision } from "./collision/ICollision";
 export { ICollisionResolution } from "./collision/ICollisionResolution";

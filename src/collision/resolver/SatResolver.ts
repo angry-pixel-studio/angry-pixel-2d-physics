@@ -15,19 +15,13 @@ export class SatResolver implements ICollisionResolver {
     private projB: AxisProjection = { min: 0, max: 0 };
     private currentOverlap: number;
     private minOverlap: number;
-
-    private containment: boolean = false;
-    private invert: boolean = false;
-
-    private direction: Vector2 = new Vector2();
-    private displacementDirection: Vector2 = new Vector2();
-
+    private smallestAxis: Vector2 = new Vector2();
+    private invertAxis: boolean;
     private distance: Vector2 = new Vector2(Infinity, Infinity);
     private cache: Vector2 = new Vector2();
 
     public resolve(shapeA: IShape, shapeB: IShape): ICollisionResolution | null {
-        this.currentOverlap = null;
-        this.minOverlap = null;
+        this.minOverlap = Infinity;
 
         if (shapeA.type === ShapeType.Circumference) {
             this.setCircumferenceAxis(shapeA as Circumference, shapeB);
@@ -53,31 +47,45 @@ export class SatResolver implements ICollisionResolver {
                 return null;
             }
 
-            this.preventContainment();
+            this.invertAxis = true;
 
-            if (this.minOverlap === null || this.currentOverlap < this.minOverlap) {
-                this.minOverlap = this.currentOverlap;
+            // prevent containment
+            if (
+                (this.projA.max > this.projB.max && this.projA.min < this.projB.min) ||
+                (this.projA.max < this.projB.max && this.projA.min > this.projB.min)
+            ) {
+                const mins = Math.abs(this.projA.min - this.projB.min);
+                const maxs = Math.abs(this.projA.max - this.projB.max);
 
-                if ((!this.containment && this.projA.max < this.projB.max) || (this.containment && this.invert)) {
-                    this.direction.copy(this.axes[i]);
-                    Vector2.scale(this.displacementDirection, this.axes[i], -1);
+                if (mins < maxs) {
+                    this.currentOverlap += mins;
                 } else {
-                    Vector2.scale(this.direction, this.axes[i], -1);
-                    this.displacementDirection.copy(this.axes[i]);
+                    this.currentOverlap += maxs;
+                    Vector2.scale(this.axes[i], this.axes[i], -1);
+                    this.invertAxis = false;
+                }
+            }
+
+            if (this.currentOverlap < this.minOverlap) {
+                this.minOverlap = this.currentOverlap;
+                this.smallestAxis.copy(this.axes[i]);
+
+                if (this.invertAxis && this.projA.max < this.projB.max) {
+                    Vector2.scale(this.smallestAxis, this.axes[i], -1);
                 }
             }
         }
 
         return {
-            direction: this.direction.clone(),
-            displacementDirection: this.displacementDirection.clone(),
+            direction: Vector2.scale(new Vector2(), this.smallestAxis, -1),
+            displacementDirection: this.smallestAxis.clone(),
             penetration: this.minOverlap,
         };
     }
 
     private projectShapeOntoAxis(projection: AxisProjection, shape: IShape, axis: Vector2): AxisProjection {
-        projection.min = Vector2.dot(axis, shape.vertices[0]);
-        projection.max = projection.min;
+        projection.min = Infinity;
+        projection.max = -Infinity;
 
         shape.vertices.forEach((vertex: Vector2) => {
             projection.min = Math.min(Vector2.dot(axis, vertex), projection.min);
@@ -85,20 +93,6 @@ export class SatResolver implements ICollisionResolver {
         });
 
         return projection;
-    }
-
-    private preventContainment(): void {
-        this.containment =
-            (this.projA.max > this.projB.max && this.projA.min < this.projB.min) ||
-            (this.projA.max < this.projB.max && this.projA.min > this.projB.min);
-
-        if (this.containment) {
-            const minSep = Math.abs(this.projA.min - this.projB.min);
-            const maxSep = Math.abs(this.projA.max - this.projB.max);
-
-            this.invert = minSep < maxSep;
-            this.currentOverlap += this.invert ? minSep : maxSep;
-        }
     }
 
     private setCircumferenceAxis(c: Circumference, s: IShape): void {

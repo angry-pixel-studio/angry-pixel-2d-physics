@@ -7,12 +7,15 @@ export declare class SatResolver implements ICollisionResolver {
     private projB;
     private currentOverlap;
     private minOverlap;
-    private smallestAxis;
-    private invertAxis;
+    private containment;
+    private invert;
+    private direction;
+    private displacementDirection;
     private distance;
     private cache;
     resolve(shapeA: IShape, shapeB: IShape): ICollisionResolution | null;
     private projectShapeOntoAxis;
+    private preventContainment;
     private setCircumferenceAxis;
     private setCircumferenceVertices;
 }
