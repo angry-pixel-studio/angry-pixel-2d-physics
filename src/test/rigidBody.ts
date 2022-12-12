@@ -36,6 +36,7 @@ const rb1 = physicsManager.addRigidBody({
     type: RigidBodyType.Dynamic,
     position: pos1.clone(),
     velocity: new Vector2(10, 0),
+    onResolve: (rb) => console.log("ball", rb.position),
 });
 
 const rb2 = physicsManager.addRigidBody({
@@ -44,6 +45,7 @@ const rb2 = physicsManager.addRigidBody({
     type: RigidBodyType.Dynamic,
     position: pos2.clone(),
     velocity: new Vector2(5, 0),
+    onResolve: (rb) => console.log("box", rb.position),
 });
 
 const run = () => {
@@ -54,7 +56,6 @@ const run = () => {
             rb1.velocity.x = 10;
         }
 
-        console.log(rb1.position, rb2.position);
         console.log("------------------------");
     }
 };

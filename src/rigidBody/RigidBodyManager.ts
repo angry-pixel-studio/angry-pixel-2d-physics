@@ -18,6 +18,7 @@ export interface IRigidBodyManager {
 export class RigidBodyManager implements IRigidBodyManager {
     private rigidBodies: IRigidBody[] = [];
 
+    private activeRigidBodies: IRigidBody[] = [];
     private colliders: number[] = [];
     private velocity: Vector2 = new Vector2();
     private displacement: Vector2 = new Vector2();
@@ -38,9 +39,11 @@ export class RigidBodyManager implements IRigidBodyManager {
     }
 
     public resolve(time: number): void {
-        this.colliders = this.rigidBodies.reduce((c, rb) => [...c, ...rb.colliderIds], []);
+        this.activeRigidBodies = this.rigidBodies.filter((rb) => rb.active);
 
-        this.rigidBodies.forEach((rigidBody) => {
+        this.colliders = this.activeRigidBodies.reduce((c, rb) => [...c, ...rb.colliderIds], []);
+
+        this.activeRigidBodies.forEach((rigidBody) => {
             if (rigidBody.type === RigidBodyType.Dynamic) {
                 this.dynamicUpdate(rigidBody, time);
             } else if (rigidBody.type === RigidBodyType.Kinematic) {
@@ -63,6 +66,13 @@ export class RigidBodyManager implements IRigidBodyManager {
 
     private kinematicUpdate(rigidBody: IRigidBody, time: number) {
         Vector2.add(rigidBody.position, rigidBody.position, Vector2.scale(this.velocity, rigidBody.velocity, time));
+
+        rigidBody.colliderIds
+            .map<ICollider>((id) => this.collisionManager.getCollider(id))
+            .forEach((collider) => {
+                Vector2.add(collider.position, collider.position, this.velocity);
+                this.collisionManager.refreshCollisionsForCollider(collider);
+            });
     }
 
     private applyGravity(rigidBody: IRigidBody, time: number): void {

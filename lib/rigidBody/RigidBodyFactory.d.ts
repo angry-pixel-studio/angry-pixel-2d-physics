@@ -13,5 +13,5 @@ export interface IRigidBodyFactory {
 }
 export declare class RigidBodyFactory implements IRigidBodyFactory {
     private lastId;
-    create({ colliderIds, type, gravity, position, velocity }: IRigidBodyDto): IRigidBody;
+    create({ colliderIds, type, gravity, position, velocity, onResolve }: IRigidBodyDto): IRigidBody;
 }

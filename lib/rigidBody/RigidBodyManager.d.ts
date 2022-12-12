@@ -9,6 +9,7 @@ export interface IRigidBodyManager {
 export declare class RigidBodyManager implements IRigidBodyManager {
     private readonly collisionManager;
     private rigidBodies;
+    private activeRigidBodies;
     private colliders;
     private velocity;
     private displacement;

@@ -9,6 +9,7 @@ export enum RigidBodyType {
 
 export interface IRigidBody {
     id: number;
+    active: boolean;
     type: RigidBodyType;
     colliderIds: number[];
     position: Vector2;
