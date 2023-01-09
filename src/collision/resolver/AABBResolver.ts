@@ -18,7 +18,9 @@ export class AABBResolver implements ICollisionResolver {
             return null;
         }
 
-        this.direction.set(Math.sign(boxB.x1 - boxA.x1), Math.sign(boxB.y1 - boxA.y1));
+        this.checkOverlapForLines(boxA, boxB);
+
+        this.direction.set(Math.sign(boxB.center.x - boxA.center.x), Math.sign(boxB.center.y - boxA.center.y));
 
         this.preventContainment(boxA, boxB);
 
@@ -39,6 +41,16 @@ export class AABBResolver implements ICollisionResolver {
         };
     }
 
+    private checkOverlapForLines(boxA: Rectangle, boxB: Rectangle) {
+        if ((boxA.width === 0 || boxB.width === 0) && this.overlapX === 0) {
+            this.overlapX = Math.min(Math.abs(boxA.x - boxB.x), Math.abs(boxA.x1 - boxB.x1));
+        }
+
+        if ((boxA.height === 0 || boxB.height === 0) && this.overlapY === 0) {
+            this.overlapY = Math.min(Math.abs(boxA.y - boxB.y), Math.abs(boxA.y1 - boxB.y1));
+        }
+    }
+
     private preventContainment(boxA: Rectangle, boxB: Rectangle): void {
         if (this.overlapY > 0) {
             if ((boxA.y1 > boxB.y1 && boxA.y < boxB.y) || (boxA.y1 < boxB.y1 && boxA.y > boxB.y)) {
@@ -46,7 +58,6 @@ export class AABBResolver implements ICollisionResolver {
                 const maxSep = Math.abs(boxA.y1 - boxB.y1);
 
                 this.overlapY += minSep < maxSep ? minSep : maxSep;
-                this.direction.y *= minSep < maxSep ? 1 : -1;
             }
         }
 
@@ -56,7 +67,6 @@ export class AABBResolver implements ICollisionResolver {
                 const maxSep = Math.abs(boxA.x1 - boxB.x1);
 
                 this.overlapX += minSep < maxSep ? minSep : maxSep;
-                this.direction.x *= minSep < maxSep ? 1 : -1;
             }
         }
     }

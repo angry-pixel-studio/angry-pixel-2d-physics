@@ -1,8 +1,12 @@
 import { Rectangle, Vector2 } from "angry-pixel-math";
 import { ICollisionMethod } from "./method/ICollisionMethod";
-import { QuadTree } from "./QuadTree";
+import { QuadTree } from "./broadPhase/QuadTree";
+import { SpartialGrid } from "./broadPhase/SpartialGrid";
 import { ICollider } from "./ICollider";
 import { ICollision } from "./ICollision";
+import { BroadPhaseMethods, IBroadPhaseResolver } from "./broadPhase/IBroadPhaseResolver";
+
+const MAX_COLLIDERS_PER_CELL = 10;
 
 export interface ICollisionManager {
     addCollider(collider: ICollider): void;
@@ -19,32 +23,42 @@ export type CollisionMatrix = [string, string][];
 export class CollisionManager implements ICollisionManager {
     private colliders: ICollider[];
     private activeColliders: ICollider[];
-    private quadTree: QuadTree;
-    private quadTreeArea: Rectangle;
-    private fixedQuadTree: boolean;
+    private broadPhaseResolver: IBroadPhaseResolver;
+    private collisionArea: Rectangle;
+    private fixedCollisionArea: boolean;
     private method: ICollisionMethod;
     private collisions: ICollision[] = [];
     private collisionMatrix: CollisionMatrix;
 
     // cache
+    private lastCollidersAmount: number = 0;
     private minArea: Vector2 = new Vector2();
     private maxArea: Vector2 = new Vector2();
     private newArea: Rectangle = new Rectangle(0, 0, 0, 0);
 
-    constructor(method: ICollisionMethod, quadTreeArea?: Rectangle, collisionMatrix?: CollisionMatrix) {
+    constructor(
+        method: ICollisionMethod,
+        broadPhaseMethod?: BroadPhaseMethods,
+        collisionArea?: Rectangle,
+        collisionMatrix?: CollisionMatrix
+    ) {
         this.method = method;
         this.colliders = [];
         this.activeColliders = [];
         this.collisionMatrix = collisionMatrix;
 
-        this.setupQuadTree(quadTreeArea);
+        this.setupBroadPhaseResolver(broadPhaseMethod ?? BroadPhaseMethods.QuadTree, collisionArea);
     }
 
-    private setupQuadTree(quadTreeArea?: Rectangle): void {
-        this.quadTreeArea = quadTreeArea ?? new Rectangle(0, 0, 0, 0);
-        this.fixedQuadTree = quadTreeArea ? true : false;
+    private setupBroadPhaseResolver(broadPhaseMethod?: BroadPhaseMethods, collisionArea?: Rectangle): void {
+        this.collisionArea = collisionArea ?? new Rectangle(0, 0, 0, 0);
+        this.fixedCollisionArea = collisionArea ? true : false;
 
-        this.quadTree = new QuadTree(this.quadTreeArea);
+        if (broadPhaseMethod === BroadPhaseMethods.SpartialGrid) {
+            this.broadPhaseResolver = new SpartialGrid(this.collisionArea);
+        } else {
+            this.broadPhaseResolver = new QuadTree(this.collisionArea);
+        }
     }
 
     public addCollider(collider: ICollider): void {
@@ -87,22 +101,26 @@ export class CollisionManager implements ICollisionManager {
 
         this.activeColliders = this.colliders.filter((c) => c.active);
 
-        this.quadTree.clear();
+        this.broadPhaseResolver.clear();
 
         this.activeColliders.forEach((collider) => {
             this.updateShape(collider);
         });
 
-        if (this.fixedQuadTree === false) {
+        if (this.fixedCollisionArea === false) {
             this.updateNewArea();
 
-            if (this.newArea.equals(this.quadTreeArea) === false) {
-                this.quadTreeArea.copy(this.newArea);
-                this.quadTree.resize(this.quadTreeArea);
+            if (this.newArea.equals(this.collisionArea) === false) {
+                this.collisionArea.copy(this.newArea);
+                this.broadPhaseResolver.resize(this.collisionArea);
             }
         }
 
-        this.activeColliders.forEach(({ id, shape: { boundingBox } }) => this.quadTree.insert(id, boundingBox));
+        this.checkForSpartialGridResize();
+
+        this.activeColliders.forEach(({ id, shape: { boundingBox } }) =>
+            this.broadPhaseResolver.insert(id, boundingBox)
+        );
 
         this.updateCollisions();
     }
@@ -128,6 +146,17 @@ export class CollisionManager implements ICollisionManager {
         );
     }
 
+    private checkForSpartialGridResize() {
+        if (
+            this.broadPhaseResolver instanceof SpartialGrid &&
+            this.lastCollidersAmount !== this.activeColliders.length
+        ) {
+            this.broadPhaseResolver.subdivisions = ((this.activeColliders.length / MAX_COLLIDERS_PER_CELL) | 0) + 1;
+            this.broadPhaseResolver.resize(this.collisionArea);
+            this.lastCollidersAmount = this.activeColliders.length;
+        }
+    }
+
     private updateCollisions(): void {
         this.activeColliders
             .filter((collider) => collider.updateCollisions)
@@ -137,7 +166,7 @@ export class CollisionManager implements ICollisionManager {
     // broadPhase takes care of looking for possible collisions
     private broadPhase(collider: ICollider): ICollider[] {
         if (this.collisionMatrix) {
-            return this.quadTree
+            return this.broadPhaseResolver
                 .retrieve<number>(collider.shape.boundingBox)
                 .map<ICollider>((id) => this.colliders[id])
                 .filter((remoteCollider) =>
@@ -149,7 +178,9 @@ export class CollisionManager implements ICollisionManager {
                 );
         }
 
-        return this.quadTree.retrieve<number>(collider.shape.boundingBox).map<ICollider>((id) => this.colliders[id]);
+        return this.broadPhaseResolver
+            .retrieve<number>(collider.shape.boundingBox)
+            .map<ICollider>((id) => this.colliders[id]);
     }
 
     // narrowPhase takes care of checking for actual collision

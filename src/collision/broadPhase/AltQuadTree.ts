@@ -1,13 +1,14 @@
 import { Rectangle } from "angry-pixel-math";
+import { IBroadPhaseResolver } from "./IBroadPhaseResolver";
 
 const MAX_DEPTH = 8;
 
-export class QuadTree {
+export class QuadTree implements IBroadPhaseResolver {
     private depth: number;
     private area: Rectangle;
     private childrenArea: Rectangle[] = [];
     private children: QuadTree[] = [];
-    private items: [Rectangle, unknown][] = [];
+    private items: unknown[] = [];
 
     constructor(area: Rectangle, depth: number = 0) {
         this.depth = depth;
@@ -47,23 +48,21 @@ export class QuadTree {
 
     public insert(item: unknown, area: Rectangle): void {
         for (let i = 0; i < 4; i++) {
-            if (this.childrenArea[i].contains(area)) {
-                if (this.depth + 1 < MAX_DEPTH) {
-                    if (!this.children[i]) {
-                        this.children[i] = new QuadTree(this.childrenArea[i], this.depth + 1);
-                    }
-
-                    return this.children[i].insert(item, area);
+            if (this.childrenArea[i].contains(area) && this.depth + 1 < MAX_DEPTH) {
+                if (!this.children[i]) {
+                    this.children[i] = new QuadTree(this.childrenArea[i], this.depth + 1);
                 }
+
+                return this.children[i].insert(item, area);
             }
         }
 
-        this.items.push([area, item]);
+        this.items.push(item);
     }
 
     public retrieve<T>(area: Rectangle, items: T[] = []): T[] {
         if (this.area.overlaps(area)) {
-            this.items.forEach((item) => items.push(item[1] as T));
+            this.items.forEach((item) => items.push(item as T));
             this.children.forEach((child) => child.retrieve(area, items));
         }
 

@@ -1,7 +1,10 @@
-import { physicsManagerFactory, Rectangle, IPhysicsManager, Line, CollisionMethods } from "..";
+import { physicsManagerFactory, Rectangle, IPhysicsManager, Line, CollisionMethods, BroadPhaseMethods } from "..";
 import { Vector2 } from "angry-pixel-math";
 
-const physicsManager: IPhysicsManager = physicsManagerFactory({ collisionMethod: CollisionMethods.SAT });
+const physicsManager: IPhysicsManager = physicsManagerFactory({
+    collisionMethod: CollisionMethods.SAT,
+    collisionBroadPhaseMethod: BroadPhaseMethods.SpartialGrid,
+});
 
 const box1 = physicsManager.addCollider({
     layer: "default",
@@ -33,7 +36,7 @@ const box4 = physicsManager.addCollider({
 });
 const box5 = physicsManager.addCollider({
     layer: "default",
-    position: new Vector2(5000, 2000),
+    position: new Vector2(1000, 1000),
     shape: new Rectangle(40, 40),
     updateCollisions: true,
     physics: true,
@@ -47,6 +50,8 @@ const line1 = physicsManager.addCollider({
 });
 
 const run = () => {
+    const then = Date.now();
+
     physicsManager.resolve(0);
 
     console.log(
@@ -57,6 +62,7 @@ const run = () => {
     console.log("------------------------");
 
     box1.position.set(578, 100);
+    box2.position.x = 10;
 
     physicsManager.resolve(0);
 
@@ -65,7 +71,15 @@ const run = () => {
             .getCollisionsForCollider(box1)
             .map((c) => ({ local: c.localCollider.id, remote: c.remoteCollider.id, resolution: c.resolution }))
     );
+
+    console.log(
+        physicsManager
+            .getCollisionsForCollider(box2)
+            .map((c) => ({ local: c.localCollider.id, remote: c.remoteCollider.id, resolution: c.resolution }))
+    );
     console.log("------------------------");
+
+    console.log("elapsed time:", Date.now() - then);
 };
 
 run();

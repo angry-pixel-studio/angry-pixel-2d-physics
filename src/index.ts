@@ -1,4 +1,5 @@
 import { Rectangle } from "angry-pixel-math";
+import { BroadPhaseMethods } from "./collision/broadPhase/IBroadPhaseResolver";
 import { ColliderFactory } from "./collision/ColliderFactory";
 import { CollisionManager, CollisionMatrix } from "./collision/CollisionManager";
 import { AABBMethod } from "./collision/method/AABBMethod";
@@ -25,17 +26,20 @@ export { Polygon } from "./collision/shape/Polygon";
 export { Rectangle } from "./collision/shape/Rectangle";
 export { IRigidBodyDto } from "./rigidBody/RigidBodyFactory";
 export { IRigidBody, RigidBodyType } from "./rigidBody/IRigidBody";
+export { BroadPhaseMethods } from "./collision/broadPhase/IBroadPhaseResolver";
 
 export interface PhysicsManagerOptions {
     collisionMethod?: CollisionMethods;
     collisionMatrix?: CollisionMatrix;
     collisionArea?: Rectangle;
+    collisionBroadPhaseMethod?: BroadPhaseMethods;
 }
 
 export const physicsManagerFactory = ({
     collisionArea,
     collisionMatrix,
     collisionMethod,
+    collisionBroadPhaseMethod,
 }: PhysicsManagerOptions = {}): IPhysicsManager => {
     const circumferenceResolver = new CircumferenceResolver();
 
@@ -44,7 +48,12 @@ export const physicsManagerFactory = ({
             ? new AABBMethod(new AABBResolver(), new CircumferenceAABBResolver(), circumferenceResolver)
             : new SatMethod(circumferenceResolver, new SatResolver());
 
-    const collisionManager = new CollisionManager(selectedMethod, collisionArea, collisionMatrix);
+    const collisionManager = new CollisionManager(
+        selectedMethod,
+        collisionBroadPhaseMethod,
+        collisionArea,
+        collisionMatrix
+    );
     const colliderFactory = new ColliderFactory();
     const rigidBodyManager = new RigidBodyManager(collisionManager);
     const rigidBodyFactory = new RigidBodyFactory();
