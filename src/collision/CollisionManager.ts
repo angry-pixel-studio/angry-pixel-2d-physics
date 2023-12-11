@@ -169,6 +169,7 @@ export class CollisionManager implements ICollisionManager {
             return this.broadPhaseResolver
                 .retrieve<number>(collider.shape.boundingBox)
                 .map<ICollider>((id) => this.colliders[id])
+                .filter((c) => c.active)
                 .filter((remoteCollider) =>
                     this.collisionMatrix.some(
                         (row) =>
@@ -180,7 +181,8 @@ export class CollisionManager implements ICollisionManager {
 
         return this.broadPhaseResolver
             .retrieve<number>(collider.shape.boundingBox)
-            .map<ICollider>((id) => this.colliders[id]);
+            .map<ICollider>((id) => this.colliders[id])
+            .filter((c) => c.active);
     }
 
     // narrowPhase takes care of checking for actual collision
