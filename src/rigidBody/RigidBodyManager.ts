@@ -27,11 +27,12 @@ export class RigidBodyManager implements IRigidBodyManager {
     constructor(private readonly collisionManager: ICollisionManager) {}
 
     public addRigidBody(rigidBody: IRigidBody): void {
-        this.rigidBodies[rigidBody.id] = rigidBody;
+        this.rigidBodies.push(rigidBody);
     }
 
     public removeRigidBody(rigidBody: IRigidBody): void {
-        delete this.rigidBodies[rigidBody.id];
+        const index = this.rigidBodies.indexOf(rigidBody);
+        if (index >= 0) this.rigidBodies.splice(index, 1);
     }
 
     public clearRigidBodies(): void {

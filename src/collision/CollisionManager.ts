@@ -62,15 +62,16 @@ export class CollisionManager implements ICollisionManager {
     }
 
     public addCollider(collider: ICollider): void {
-        this.colliders[collider.id] = collider;
+        this.colliders.push(collider);
     }
 
     public getCollider(id: number): ICollider {
-        return this.colliders[id];
+        return this.colliders.find((c) => c.id === id);
     }
 
     public removeCollider(collider: ICollider): void {
-        delete this.colliders[collider.id];
+        const index = this.colliders.indexOf(collider);
+        if (index >= 0) this.colliders.splice(index, 1);
     }
 
     public clearColliders(): void {
@@ -82,7 +83,7 @@ export class CollisionManager implements ICollisionManager {
     }
 
     public refreshCollisionsForCollider(collider: ICollider): void {
-        if (!this.colliders[collider.id] || !collider.active) return;
+        if (!this.getCollider(collider.id) || !collider.active) return;
 
         this.collisions = this.collisions.filter(
             (collision) => collision.localCollider.id !== collider.id && collision.remoteCollider.id !== collider.id
@@ -168,7 +169,7 @@ export class CollisionManager implements ICollisionManager {
         if (this.collisionMatrix) {
             return this.broadPhaseResolver
                 .retrieve<number>(collider.shape.boundingBox)
-                .map<ICollider>((id) => this.colliders[id])
+                .map<ICollider>((id) => this.getCollider(id))
                 .filter((c) => c.active)
                 .filter((remoteCollider) =>
                     this.collisionMatrix.some(
@@ -181,7 +182,7 @@ export class CollisionManager implements ICollisionManager {
 
         return this.broadPhaseResolver
             .retrieve<number>(collider.shape.boundingBox)
-            .map<ICollider>((id) => this.colliders[id])
+            .map<ICollider>((id) => this.getCollider(id))
             .filter((c) => c.active);
     }
 
